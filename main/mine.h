@@ -15,4 +15,5 @@
 #include "servo_control.h"
 #include "gpio.h"
 #include "lcd_control.h"
+#include "config.h"
 #endif
