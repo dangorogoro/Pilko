@@ -5,13 +5,38 @@
 #define PIN_NUM_CLK  19
 #define PIN_NUM_CS   22
 
+#define X_MIN 1516
+#define X_MAX 2682
+#define Y_MIN 1070
+#define Y_MAX 3050
+/*
+ * <------------ x
+ *----------------
+ *connector*
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+y*
+ *
+ *
+ *
+ * 
+ * *
+*/
+
 spi_device_handle_t m_spi = NULL;
 void lcd_spi_pre_transfer_callback(spi_transaction_t *t){
-    //int dc=(int)t->user;
-    //gpio_set_level(PIN_NUM_DC, dc);
+  //int dc=(int)t->user;
+  //gpio_set_level(PIN_NUM_DC, dc);
 }
-void setup_lcd(){
-	esp_err_t ret;
+void lcd_config(){
+  esp_err_t ret;
   spi_bus_config_t buscfg = {
     .miso_io_num = PIN_NUM_MISO,
     .mosi_io_num = PIN_NUM_MOSI,
@@ -31,7 +56,7 @@ void setup_lcd(){
   ret = spi_bus_add_device(HSPI_HOST, &devcfg, &m_spi);
   assert(ret==ESP_OK);
 }
-uint16_t read_value(uint16_t port){
+uint16_t ret_point(uint16_t port){
   esp_err_t ret;
   uint8_t data[3] = {0};
   data[0] = port;
@@ -39,8 +64,21 @@ uint16_t read_value(uint16_t port){
     .length = 1 * 8 * 3,              // Len is in bytes, transaction length is in bits.
     .tx_buffer = &data,                // Data
     .flags = SPI_TRANS_USE_RXDATA,
-	};
+  };
   ret = spi_device_transmit(m_spi, &t); //Transmit!
   assert(ret == ESP_OK);              // Should have had no issues.
-	return (t.rx_data[1] << 8 | t.rx_data[2]) >> 3;
+  return (t.rx_data[1] << 8 | t.rx_data[2]) >> 3;
+}
+Coordinate ret_coordinate(){
+  Coordinate point;
+  point.x = ret_point(X_READ);
+  point.y = ret_point(Y_READ);
+  return point;
+}
+void lcd_task(void *arg){
+  lcd_config();
+  while(1){
+    ret_coordinate();
+	  vTaskDelay(1 / portTICK_RATE_MS);
+  }
 }

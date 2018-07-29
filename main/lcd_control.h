@@ -5,6 +5,12 @@
 #include "soc/gpio_struct.h"
 #define X_READ 0x94
 #define Y_READ 0xd4
-void setup_lcd();
-uint16_t read_value(uint16_t port);
+typedef struct{
+  uint8_t flag;
+  uint16_t x;
+  uint16_t y;
+}Coordinate;
+void lcd_config();
+uint16_t ret_point(uint16_t port);
+Coordinate ret_coordinate();
 #endif
