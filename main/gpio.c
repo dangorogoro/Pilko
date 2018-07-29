@@ -1,41 +1,27 @@
 #include "mine.h"
-/* GPIO Example
-
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
-
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
-*/
-/**
- * Brief:
- * This test code shows how to configure gpio and how to use gpio interrupt.
- *
- * GPIO status:
- * GPIO18: output
- * GPIO19: output
- * GPIO4:  input, pulled up, interrupt from rising edge and falling edge
- * GPIO5:  input, pulled up, interrupt from rising edge.
- *
- * Test:
- * Connect GPIO18 with GPIO4
- * Connect GPIO19 with GPIO5
- * Generate pulses on GPIO18/19, that triggers interrupt on GPIO4/5
- *
- */
-
-#define GPIO_OUTPUT_IO_0    18
-#define GPIO_OUTPUT_IO_1    19
-#define GPIO_OUTPUT_PIN_SEL  ((1<<GPIO_OUTPUT_IO_0) | (1<<GPIO_OUTPUT_IO_1))
 #define GPIO_INPUT_IO_0     4
 #define GPIO_INPUT_IO_1     5
 #define GPIO_INPUT_PIN_SEL  ((1<<GPIO_INPUT_IO_0) | (1<<GPIO_INPUT_IO_1))
 #define ESP_INTR_FLAG_DEFAULT 0
 
 #define LED_OUTPUT_RED 16
-#define LED_OUTPUT_BLUE 17
+#define LED_OUTPUT_BLUE 17 
 #define LED_OUTPUT_SEL  ((1<<LED_OUTPUT_RED) | (1<<LED_OUTPUT_BLUE))
-uint8_t led_status = 0;
+
+#define CHARLIE_A_PIN 32
+#define CHARLIE_B_PIN 33
+#define CHARLIE_C_PIN 14
+#define CHARLIE_D_PIN 12
+#define CHARLIE_E_PIN 21
+
+#define CHARLIE_A GPIO_SEL_32
+#define CHARLIE_B GPIO_SEL_33
+#define CHARLIE_C GPIO_SEL_14
+#define CHARLIE_D GPIO_SEL_12
+#define CHARLIE_E GPIO_SEL_21
+#define CHARLIE_SEL (CHARLIE_A | CHARLIE_B | CHARLIE_C | CHARLIE_D | CHARLIE_E)
+
+uint32_t led_status = 0;
 static xQueueHandle gpio_evt_queue = NULL;
 
 static void IRAM_ATTR gpio_isr_handler(void* arg)
@@ -63,18 +49,28 @@ void led_config(){
   io_conf.pull_up_en = 0;
   gpio_config(&io_conf);
 }
+void charlie_config(){
+  gpio_config_t io_conf;
+  io_conf.intr_type = GPIO_PIN_INTR_DISABLE;
+  io_conf.mode = GPIO_MODE_OUTPUT_OD;
+  io_conf.pin_bit_mask = CHARLIE_SEL;
+  io_conf.pull_down_en = 0;
+  io_conf.pull_up_en = 0;
+  gpio_config(&io_conf);
+}
 void led_blink(void *arg){
+  led_config();
 	uint8_t cnt = 0;
   while(1){
-	  gpio_config_t io_conf;
-	  io_conf.mode = GPIO_MODE_OUTPUT;
-	  io_conf.pin_bit_mask = 1<<LED_OUTPUT_RED;
-	  gpio_config(&io_conf);
+	  //gpio_config_t io_conf;
+	  //io_conf.mode = GPIO_MODE_OUTPUT;
+	  //io_conf.pin_bit_mask = 1<<LED_OUTPUT_RED;
+	  //gpio_config(&io_conf);
 	  if(led_status == 0){
-      gpio_config_t io_conf;
-      io_conf.mode = GPIO_MODE_OUTPUT_OD;
-      io_conf.pin_bit_mask = 1<<LED_OUTPUT_RED;
-      gpio_config(&io_conf);
+      //gpio_config_t io_conf;
+      //io_conf.mode = GPIO_MODE_OUTPUT_OD;
+      //io_conf.pin_bit_mask = 1<<LED_OUTPUT_RED;
+      //gpio_config(&io_conf);
       gpio_set_level(LED_OUTPUT_RED, 1);
       gpio_set_level(LED_OUTPUT_BLUE,1);
 	  }
@@ -94,70 +90,139 @@ void led_blink(void *arg){
 	  }
   }
 }
-/*
-void led_blink(void *arg){
-	uint8_t cnt = 0;
-  while(1){
-    gpio_set_level(LED_OUTPUT_RED, (cnt + 1) % 2);
-    gpio_set_level(LED_OUTPUT_BLUE,cnt % 2);
-	  cnt++;
-	  vTaskDelay(10);
+void charlie_set_low_cont(uint8_t i){
+  switch(i){
+    case 0:
+      gpio_set_level(CHARLIE_A_PIN, 0);
+      break;
+    case 1:
+      gpio_set_level(CHARLIE_B_PIN, 0);
+      break;
+    case 2:
+      gpio_set_level(CHARLIE_C_PIN, 0);
+      break;
+    case 3:
+      gpio_set_level(CHARLIE_D_PIN, 0);
+      break;
+    case 4:
+      gpio_set_level(CHARLIE_E_PIN, 0);
+      break;
   }
 }
-*/
-/*
-void app_main()
-{
-    gpio_config_t io_conf;
-    //disable interrupt
-    io_conf.intr_type = GPIO_PIN_INTR_DISABLE;
-    //set as output mode
-    io_conf.mode = GPIO_MODE_OUTPUT;
-    //bit mask of the pins that you want to set,e.g.GPIO18/19
-    io_conf.pin_bit_mask = GPIO_OUTPUT_PIN_SEL;
-    //disable pull-down mode
-    io_conf.pull_down_en = 0;
-    //disable pull-up mode
-    io_conf.pull_up_en = 0;
-    //configure GPIO with the given settings
-    gpio_config(&io_conf);
-
-    //interrupt of rising edge
-    io_conf.intr_type = GPIO_PIN_INTR_POSEDGE;
-    //bit mask of the pins, use GPIO4/5 here
-    io_conf.pin_bit_mask = GPIO_INPUT_PIN_SEL;
-    //set as input mode    
-    io_conf.mode = GPIO_MODE_INPUT;
-    //enable pull-up mode
-    io_conf.pull_up_en = 1;
-    gpio_config(&io_conf);
-
-    //change gpio intrrupt type for one pin
-    gpio_set_intr_type(GPIO_INPUT_IO_0, GPIO_INTR_ANYEDGE);
-
-    //create a queue to handle gpio event from isr
-    gpio_evt_queue = xQueueCreate(10, sizeof(uint32_t));
-    //start gpio task
-    xTaskCreate(gpio_task_example, "gpio_task_example", 2048, NULL, 10, NULL);
-
-    //install gpio isr service
-    gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
-    //hook isr handler for specific gpio pin
-    gpio_isr_handler_add(GPIO_INPUT_IO_0, gpio_isr_handler, (void*) GPIO_INPUT_IO_0);
-    //hook isr handler for specific gpio pin
-    gpio_isr_handler_add(GPIO_INPUT_IO_1, gpio_isr_handler, (void*) GPIO_INPUT_IO_1);
-
-    //remove isr handler for gpio number.
-    gpio_isr_handler_remove(GPIO_INPUT_IO_0);
-    //hook isr handler for specific gpio pin again
-    gpio_isr_handler_add(GPIO_INPUT_IO_0, gpio_isr_handler, (void*) GPIO_INPUT_IO_0);
-
-    int cnt = 0;
-    while(1) {
-        printf("cnt: %d\n", cnt++);
-        vTaskDelay(1000 / portTICK_RATE_MS);
-        gpio_set_level(GPIO_OUTPUT_IO_0, cnt % 2);
-        gpio_set_level(GPIO_OUTPUT_IO_1, cnt % 2);
+void charlie_set_out_mode(uint8_t pin, uint8_t status){
+  gpio_config_t io_conf;
+  io_conf.intr_type = GPIO_PIN_INTR_DISABLE;
+  io_conf.mode = GPIO_MODE_OUTPUT_OD;
+  io_conf.pin_bit_mask = 0;
+  io_conf.pull_down_en = 0;
+  io_conf.pull_up_en = 0;
+  printf("select_mode %d, i %d\n",pin, status);
+  uint8_t flag = 0;
+  for(int i = 0; i < 4; i++){
+    if(((pin >> i) & 0x01) == 0){
+      flag = 1;
+      switch(status){
+        case 0:
+          if(i == 0) io_conf.pin_bit_mask |= CHARLIE_B;
+          else if(i == 1) io_conf.pin_bit_mask |= CHARLIE_C;
+          else if(i == 2) io_conf.pin_bit_mask |= CHARLIE_D;
+          else if(i == 3) io_conf.pin_bit_mask |= CHARLIE_E;
+          break;
+        case 1:
+          if(i == 0) io_conf.pin_bit_mask |= CHARLIE_A;
+          else if(i == 1) io_conf.pin_bit_mask |= CHARLIE_C;
+          else if(i == 2) io_conf.pin_bit_mask |= CHARLIE_D;
+          else if(i == 3) io_conf.pin_bit_mask |= CHARLIE_E;
+          break;
+        case 2:
+          if(i == 0) io_conf.pin_bit_mask |= CHARLIE_A;
+          else if(i == 1) io_conf.pin_bit_mask |= CHARLIE_B;
+          else if(i == 2) io_conf.pin_bit_mask |= CHARLIE_D;
+          else if(i == 3) io_conf.pin_bit_mask |= CHARLIE_E;
+          break;
+        case 3:
+          if(i == 0) io_conf.pin_bit_mask |= CHARLIE_A;
+          else if(i == 1) io_conf.pin_bit_mask |= CHARLIE_B;
+          else if(i == 2) io_conf.pin_bit_mask |= CHARLIE_C;
+          else if(i == 3) io_conf.pin_bit_mask |= CHARLIE_E;
+          break;
+        case 4:
+          if(i == 0) io_conf.pin_bit_mask |= CHARLIE_A;
+          else if(i == 1) io_conf.pin_bit_mask |= CHARLIE_B;
+          else if(i == 2) io_conf.pin_bit_mask |= CHARLIE_C;
+          else if(i == 3) io_conf.pin_bit_mask |= CHARLIE_D;
+          break;
+      }
     }
+  }
+  if(flag == 1) gpio_config(&io_conf);
+  io_conf.mode = GPIO_MODE_OUTPUT;
+  io_conf.pin_bit_mask = 0;
+  flag = 0;
+  for(int i = 0; i < 4; i++){
+    if(((pin >> i) & 0x01) == 1){
+      flag = 1;
+      switch(status){
+        case 0:
+          if(i == 0) io_conf.pin_bit_mask |= CHARLIE_B;
+          else if(i == 1) io_conf.pin_bit_mask |= CHARLIE_C;
+          else if(i == 2) io_conf.pin_bit_mask |= CHARLIE_D;
+          else if(i == 3) io_conf.pin_bit_mask |= CHARLIE_E;
+          break;
+        case 1:
+          if(i == 0) io_conf.pin_bit_mask |= CHARLIE_A;
+          else if(i == 1) io_conf.pin_bit_mask |= CHARLIE_C;
+          else if(i == 2) io_conf.pin_bit_mask |= CHARLIE_D;
+          else if(i == 3) io_conf.pin_bit_mask |= CHARLIE_E;
+          break;
+        case 2:
+          if(i == 0) io_conf.pin_bit_mask |= CHARLIE_A;
+          else if(i == 1) io_conf.pin_bit_mask |= CHARLIE_B;
+          else if(i == 2) io_conf.pin_bit_mask |= CHARLIE_D;
+          else if(i == 3) io_conf.pin_bit_mask |= CHARLIE_E;
+          break;
+        case 3:
+          if(i == 0) io_conf.pin_bit_mask |= CHARLIE_A;
+          else if(i == 1) io_conf.pin_bit_mask |= CHARLIE_B;
+          else if(i == 2) io_conf.pin_bit_mask |= CHARLIE_C;
+          else if(i == 3) io_conf.pin_bit_mask |= CHARLIE_E;
+          break;
+        case 4:
+          if(i == 0) io_conf.pin_bit_mask |= CHARLIE_A;
+          else if(i == 1) io_conf.pin_bit_mask |= CHARLIE_B;
+          else if(i == 2) io_conf.pin_bit_mask |= CHARLIE_C;
+          else if(i == 3) io_conf.pin_bit_mask |= CHARLIE_D;
+          break;
+      }
+    }
+  }
+  if(flag == 1) gpio_config(&io_conf);
 }
-*/
+void charlie_set_all(uint8_t status){
+  gpio_set_level(CHARLIE_A_PIN, status);
+  gpio_set_level(CHARLIE_B_PIN, status);
+  gpio_set_level(CHARLIE_C_PIN, status);
+  gpio_set_level(CHARLIE_D_PIN, status);
+  gpio_set_level(CHARLIE_E_PIN, status);
+}
+  
+void charlie_plexing(void *arg){
+  uint8_t select_pin[5];
+  while(1){
+    charlie_set_all(0);
+    printf("pa\n");
+    //charlie_config();
+    for(int i = 0;i < 5; i++){
+      charlie_set_all(0);
+      printf("led_status is 0x%x\n",led_status);
+      select_pin[i] = (uint8_t)((led_status & (0xf << 4*i)) >> 4*i);
+      charlie_set_out_mode(select_pin[i], i);
+      printf("po\n");
+      charlie_set_all(1);
+      charlie_set_low_cont(i);
+      printf("pi\n");
+      vTaskDelay(50 / portTICK_RATE_MS);
+    }
+      vTaskDelay(1 / portTICK_RATE_MS);
+  }
+}
