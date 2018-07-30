@@ -12,5 +12,6 @@ typedef struct{
 }Coordinate;
 void lcd_config();
 uint16_t ret_point(uint16_t port);
+void lcd_task(void *arg);
 Coordinate ret_coordinate();
 #endif
