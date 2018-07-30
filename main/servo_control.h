@@ -12,4 +12,5 @@ typedef struct{
 void mcpwm_example_gpio_initialize();
 uint32_t servo_per_degree_init(uint32_t degree_of_rotation);
 void mcpwm_example_servo_control(void *arg);
+void servo_control_task(void* arg);
 #endif

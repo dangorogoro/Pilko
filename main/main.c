@@ -15,23 +15,16 @@ void app_main(){
 
   printf("Testing servo motor.......\n");
   //xTaskCreate(mcpwm_example_servo_control, "mcpwm_example_servo_control", 4096, NULL, 5, NULL);
+  xTaskCreate(servo_control_task, "servo_task", 4096, NULL, 1, NULL);
+  xTaskCreate(lcd_task, "lcd_task", 4096, NULL, 2, NULL);
   //xTaskCreate(led_blink, "led_blink", 4096, NULL, 2, NULL);
-  xTaskCreate(charlie_plexing, "charlie_plexing", 8192, NULL, 3, NULL);
-  lcd_config();
+  //xTaskCreate(charlie_plexing, "charlie_plexing", 8192, NULL, 3, NULL);
   uint32_t count = 0;
   while(1){
-    /*
-    led_status = 1;
-    for(int i=0;i<=20;i++){
-      led_status *= 2;
-      vTaskDelay(1000 / portTICK_RATE_MS);
-    }
-    */
     count = (count + 1) % 20;
     //led_status = 1 << count;
     led_status = 0xfffff;
-    vTaskDelay(500 / portTICK_RATE_MS);
-    //printf("X-Position %d, Y-Position %d\r\n", ret_point(X_READ), ret_point(Y_READ));
+    //vTaskDelay(500 / portTICK_RATE_MS);
   }
   esp_restart();
 }
