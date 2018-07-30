@@ -1,6 +1,5 @@
 #include "mine.h"
-typedef struct{
-  Coordinate coord;
-  MotorUnit servo[3];
-//  Led charlie;
-}Controller;
+Controller Pilko;
+uint8_t check_controller_flag(Controller po){
+  return po.coord.flag;
+}
