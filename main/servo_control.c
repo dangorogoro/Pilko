@@ -65,18 +65,53 @@ void mcpwm_example_servo_control(void *arg){
 
 void servo_control_task(void* arg){
   mc_pwm_config();
-  const float p = 0.001;
-  const float i = 0.0001;
-  const float d = 0.0001;
+  float p = 0.015;
+  float i = 0.0001;
+  float d = 0.15;
+  int8_t motor_deg[3] = {0};
+  uint8_t now_flag = 0;
+  uint8_t last_flag = 0;
+  int8_t default_angle = 45;
+  Coordinate now_e;
+  Coordinate last_e;
   while(1){
-    if(check_controller_flag(Pilko) == true){
-      all_motor_control(60,60,90);
-      printf("motor true\n");
+    now_flag = check_ctrl_flag(Pilko);
+    if(now_flag == true){
+      Coordinate now_coord = Pilko.coord;
+      Coordinate error_coord = {
+        .x = target_coord.x - now_coord.x,
+        .y = target_coord.y - now_coord.y
+      };
+      if((fabs(error_coord.x - last_e.x) >= 100 || fabs(error_coord.x - last_e.x) >= 100) 
+          && last_flag == true){
+        now_e = last_e;
+        printf("Fixed!!!!!!!!\n");
+      }
+      else now_e = error_coord;
+      printf("error_coord is x %d, y %d\n", error_coord.x, error_coord.y);
+      //error_coord.x -= error_coord.y * sqrt(3); // Fix vector
+      motor_deg[0] = (p * -now_e.x + d *((-now_e.x) - (-last_e.x))) * sqrt(3);
+      motor_deg[1] = p * -now_e.y + d *((-now_e.y) - (-last_e.y)) + (p * now_e.x);
+      motor_deg[2] = p * now_e.y + d *(now_e.y - last_e.y) + (p * now_e.x);
+      //motor_deg[2] = p * now_e.y;
+      /*
+      if((error_coord.x >= 0 && error_coord.y >= 0) || (error_coord.x <= 0 && error_coord.y <= 0)){
+        motor_deg[2] = p * error_coord.y;
+        motor_deg[1] = 0;
+      }
+      else{
+        motor_deg[2] = 0;
+        motor_deg[1] = p * -error_coord.y;
+      }
+      */
+      //motor_deg[0] = p * -error_coord.x;
+      printf("motor_deg0 %d motor_deg1 %d  motor_deg2 %d \n", motor_deg[0], motor_deg[1], motor_deg[2]);
     }
-    else{
-      all_motor_control(90,90,90);
-      printf("motor false\n");
-    }
+    last_flag = now_flag;
+
+    all_motor_control(default_angle + motor_deg[0], default_angle+ motor_deg[1], default_angle + motor_deg[2]);
+    last_e = now_e;
+
     vTaskDelay(5);
   }
 }
