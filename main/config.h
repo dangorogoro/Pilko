@@ -7,5 +7,5 @@ typedef struct{
 }Controller;
 //  Led charlie;
 extern Controller Pilko;
-uint8_t check_controller_flag(Controller);
+uint8_t check_ctrl_flag(Controller po);
 #endif
