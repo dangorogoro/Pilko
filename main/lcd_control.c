@@ -8,11 +8,11 @@
 #define X_MIN 1516
 #define X_MAX 2682
 #define X_LEN (X_MAX - X_MIN)
-#define X_CENTER ((X_MIN + X_MAX) / 2)
+#define X_CENTER ((X_MIN + X_MAX) / 2 - X_MIN)
 #define Y_MIN 1070
 #define Y_MAX 3050
 #define Y_LEN (Y_MAY - Y_MIN)
-#define Y_CENTER ((Y_MIN + Y_MAX) / 2)
+#define Y_CENTER ((Y_MIN + Y_MAX) / 2 - Y_MIN)
 /*
  * <------------ x
  *----------------
@@ -33,6 +33,10 @@ y*
  * *
 */
 
+Coordinate target_coord = {
+  .x = X_CENTER,
+  .y = Y_CENTER,
+};
 spi_device_handle_t m_spi = NULL;
 void lcd_spi_pre_transfer_callback(spi_transaction_t *t){
   //int dc=(int)t->user;
@@ -78,7 +82,7 @@ Coordinate ret_coordinate(){
   point.y = ret_point(Y_READ);
   if(point.x >= X_MAX || point.y <= Y_MIN) point.flag = false;
   else{
-    printf("ball find! X--%d Y--%d\n", point.x, point.y);
+    //printf("ball find! X--%d Y--%d\n", point.x, point.y);
     point.flag = true;
   }
   point.x -= X_MIN;
@@ -89,6 +93,6 @@ void lcd_task(void *arg){
   lcd_config();
   while(1){
     Pilko.coord = ret_coordinate();
-	  vTaskDelay(1 / portTICK_RATE_MS);
+	  vTaskDelay(5 / portTICK_RATE_MS);
   }
 }
