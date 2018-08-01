@@ -65,9 +65,9 @@ void mcpwm_example_servo_control(void *arg){
 
 void servo_control_task(void* arg){
   mc_pwm_config();
-  float p = 0.015;
+  float p = 0.023;  //for 0.029
   float i = 0.0001;
-  float d = 0.15;
+  float d = 0.4;    //for 0.3
   int8_t motor_deg[3] = {0};
   uint8_t now_flag = 0;
   uint8_t last_flag = 0;
@@ -82,17 +82,16 @@ void servo_control_task(void* arg){
         .x = target_coord.x - now_coord.x,
         .y = target_coord.y - now_coord.y
       };
-      if((fabs(error_coord.x - last_e.x) >= 100 || fabs(error_coord.x - last_e.x) >= 100) 
+      if((fabs(error_coord.x - last_e.x) >= 150 || fabs(error_coord.x - last_e.x) >= 150) 
           && last_flag == true){
         now_e = last_e;
         printf("Fixed!!!!!!!!\n");
       }
       else now_e = error_coord;
       printf("error_coord is x %d, y %d\n", error_coord.x, error_coord.y);
-      //error_coord.x -= error_coord.y * sqrt(3); // Fix vector
-      motor_deg[0] = (p * -now_e.x + d *((-now_e.x) - (-last_e.x))) * sqrt(3);
-      motor_deg[1] = p * -now_e.y + d *((-now_e.y) - (-last_e.y)) + (p * now_e.x);
-      motor_deg[2] = p * now_e.y + d *(now_e.y - last_e.y) + (p * now_e.x);
+      motor_deg[0] = (p * -now_e.x + d *((-now_e.x) - (-last_e.x))) / 2.f;
+      motor_deg[1] = p * (now_e.x  / 2.0f - now_e.y / sqrt(3)) + d * ((now_e.x - last_e.x) / 2.0f + ((-now_e.y) - (-last_e.y)) / sqrt(3));
+      motor_deg[2] = p * (now_e.x / 2.f + now_e.y / sqrt(3)) + d * ((now_e.x - last_e.x) / 2.0f + (now_e.y - last_e.y) / sqrt(3));
       //motor_deg[2] = p * now_e.y;
       /*
       if((error_coord.x >= 0 && error_coord.y >= 0) || (error_coord.x <= 0 && error_coord.y <= 0)){
