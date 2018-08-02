@@ -221,7 +221,7 @@ void charlie_plexing(void *arg){
       charlie_set_all(1);
       charlie_set_low_cont(i);
       printf("pi\n");
-      vTaskDelay(50 / portTICK_RATE_MS);
+      vTaskDelay(10 / portTICK_RATE_MS);
     }
       vTaskDelay(1 / portTICK_RATE_MS);
   }

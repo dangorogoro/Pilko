@@ -22,9 +22,8 @@ void app_main(){
   uint32_t count = 0;
   while(1){
     count = (count + 1) % 20;
-    //led_status = 1 << count;
-    led_status = 0xfffff;
-    //vTaskDelay(500 / portTICK_RATE_MS);
+    led_status = 1 << count;
+    vTaskDelay(1000 / portTICK_RATE_MS);
   }
   esp_restart();
 }

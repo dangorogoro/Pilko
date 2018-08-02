@@ -65,9 +65,9 @@ void mcpwm_example_servo_control(void *arg){
 
 void servo_control_task(void* arg){
   mc_pwm_config();
-  float p = 0.023;  //for 0.029
-  float i = 0.0001;
-  float d = 0.4;    //for 0.3
+  float p = 0.023;  //0.029 for club  0.023 
+  float i = 0.0001; 
+  float d = 0.4;    //0.3 for club 0.4
   int8_t motor_deg[3] = {0};
   uint8_t now_flag = 0;
   uint8_t last_flag = 0;
